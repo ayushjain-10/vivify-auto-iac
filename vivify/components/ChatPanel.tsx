@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { streamGeminiResponse } from '../services/geminiService';
+import React, { useState, useRef, useEffect } from 'react';
+import { chatApi } from '../services/chatApi';
 import { PaperAirplaneIcon } from './icons/PaperAirplaneIcon';
 import { ChatMessage, ModelStep } from '../types';
 import { CogIcon } from './icons/CogIcon';
@@ -10,19 +10,18 @@ import { RadarIcon } from './icons/RadarIcon';
 
 const CHAT_STORAGE_KEY = 'vibe_devops_chat_history';
 
-const API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY;
-
 const initialMessage: ChatMessage = {
   id: 'init-1',
   role: 'model',
-  text: API_KEY && API_KEY !== 'your_api_key_here' 
-    ? 'Hello! I am Vibe, your DevOps assistant. I can help you list tasks (e.g., "list my inprogress tasks"), scan your GCP project ("scan my project"), or answer questions. How can I help?'
-    : '⚠️ Welcome! To enable the AI assistant, please add your GEMINI_API_KEY to the .env.local file. Get your key from https://aistudio.google.com/app/apikey',
+  text: 'Hello! I am Vibe, your DevOps assistant. I can help you list tasks (e.g., "list my inprogress tasks"), query your GCP resources, or answer questions. How can I help?',
   timestamp: new Date().toISOString(),
 };
 
 const TOOL_ICONS: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
   discover_gcp_resources: RadarIcon,
+  task_manager: TerminalIcon,
+  canvas_query: RadarIcon,
+  web_search: TerminalIcon,
 };
 
 
@@ -107,35 +106,41 @@ const ChatPanel: React.FC = () => {
     setIsLoading(true);
 
     const modelMessageId = `model-${Date.now()}`;
-    setMessages(currentMessages => [...currentMessages, { id: modelMessageId, role: 'model', steps: [], timestamp: new Date().toISOString() }]);
-
-    const historyForApi = newMessages.map(msg => ({
-        id: msg.id,
-        role: msg.role,
-        text: msg.text || '',
-        steps: msg.steps,
-        timestamp: msg.timestamp
-    }));
+    const sessionId = `session-${Date.now()}`;  // Generate session ID
+    
+    setMessages(currentMessages => [...currentMessages, { 
+      id: modelMessageId, 
+      role: 'model', 
+      steps: [], 
+      timestamp: new Date().toISOString() 
+    }]);
 
     try {
-      await streamGeminiResponse(input, historyForApi, (chunk: ModelStep) => {
-        setMessages(currentMessages => produce(currentMessages, draft => {
-          const messageToUpdate = draft.find(m => m.id === modelMessageId);
-          if (messageToUpdate) {
-            if (!messageToUpdate.steps) messageToUpdate.steps = [];
-            messageToUpdate.steps.push(chunk);
-            if (chunk.type === 'final_answer') {
-              messageToUpdate.text = chunk.text;
+      await chatApi.streamMessage(
+        {
+          message: input,
+          session_id: sessionId,
+          history: []  // History is managed by backend
+        },
+        (chunk: ModelStep) => {
+          setMessages(currentMessages => produce(currentMessages, draft => {
+            const messageToUpdate = draft.find(m => m.id === modelMessageId);
+            if (messageToUpdate) {
+              if (!messageToUpdate.steps) messageToUpdate.steps = [];
+              messageToUpdate.steps.push(chunk);
+              if (chunk.type === 'final_answer') {
+                messageToUpdate.text = chunk.text;
+              }
             }
-          }
-        }));
-      });
+          }));
+        }
+      );
     } catch (error) {
-      console.error('Error streaming Gemini response:', error);
+      console.error('Error streaming chat response:', error);
       setMessages(currentMessages => produce(currentMessages, draft => {
           const messageToUpdate = draft.find(m => m.id === modelMessageId);
           if (messageToUpdate) {
-            messageToUpdate.text = 'Sorry, I encountered an error. Please try again.';
+            messageToUpdate.text = `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`;
           }
       }));
     } finally {
@@ -186,11 +191,7 @@ const ChatPanel: React.FC = () => {
           </button>
         </div>
         <div className="text-xs text-center text-gray-500 pt-2">
-          AI: {API_KEY && API_KEY !== 'your_api_key_here' ? (
-            <span className="text-green-400">Connected</span>
-          ) : (
-            <span className="text-red-400">Not Configured</span>
-          )}
+          Agent: <span className="text-green-400">Backend Connected</span>
           <span className="mx-2">|</span>
           GCP: {hasGCPAccess ? (
             <span className="text-green-400">Connected</span>

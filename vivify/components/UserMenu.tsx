@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useGCPConnection } from '../context/GCPConnectionContext';
+import { useGCPArchitectureStore } from '../context/GCPArchitectureStore';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { UserCircleIcon } from './icons/UserCircleIcon';
 import { KeyIcon } from './icons/KeyIcon';
@@ -8,6 +9,7 @@ import { XIcon } from './icons/XIcon';
 const UserMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { hasGCPAccess, clearGCPConnection, setIsModalOpen } = useGCPConnection();
+  const { clearArchitecture } = useGCPArchitectureStore();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(menuRef, () => setIsOpen(false));
@@ -19,6 +21,7 @@ const UserMenu: React.FC = () => {
   
   const handleDisconnect = () => {
     clearGCPConnection();
+    clearArchitecture(); // Clear stored architecture data
     setIsOpen(false);
   };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useGCPArchitecture } from '../hooks/useGCPArchitecture';
+import { useGCPArchitectureStore } from '../context/GCPArchitectureStore';
 import GCPArchitectureDashboard from '../components/gcp/GCPArchitectureDashboard';
 import { GCPService } from '../types/gcp';
 import { AlertTriangleIcon } from '../components/icons/AlertTriangleIcon';
@@ -7,14 +7,22 @@ import { useGCPConnection } from '../context/GCPConnectionContext';
 
 const GCPArchitectureDashboardPage: React.FC = () => {
   const { hasGCPAccess, credentials, projectId, setIsModalOpen } = useGCPConnection();
-  const { architecture, loading, error, refresh } = useGCPArchitecture(projectId, credentials, hasGCPAccess);
+  const { architecture, loading, error, lastFetch, fetchArchitecture } = useGCPArchitectureStore();
   const [selectedResource, setSelectedResource] = useState<GCPService | null>(null);
+
+  // Manual refresh function
+  const handleRefresh = () => {
+    if (credentials && projectId) {
+      fetchArchitecture(credentials, projectId);
+    }
+  };
 
   const handleResourceSelect = (resource: GCPService | null) => {
     setSelectedResource(resource);
   };
 
   const renderContent = () => {
+    // Not connected to GCP
     if (!hasGCPAccess) {
       return (
         <div className="flex flex-col items-center justify-center h-full text-gray-400 text-center">
@@ -28,7 +36,27 @@ const GCPArchitectureDashboardPage: React.FC = () => {
             Connect to GCP
           </button>
         </div>
-      )
+      );
+    }
+
+    // Connected but no data yet - show empty state
+    if (!architecture && !loading && !error) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-gray-400 text-center p-8">
+          <div className="text-6xl mb-6">🔍</div>
+          <h2 className="text-2xl font-semibold mb-3 text-gray-200">Ready to Discover Your Infrastructure</h2>
+          <p className="max-w-md mb-8 text-gray-400">
+            Click the button below to scan your GCP project <span className="font-mono text-blue-400">{projectId}</span> and visualize all resources.
+          </p>
+          <button 
+            onClick={handleRefresh}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors flex items-center space-x-2"
+          >
+            <span>🔍</span>
+            <span>Discover Resources</span>
+          </button>
+        </div>
+      );
     }
 
     if (loading) {
@@ -74,7 +102,7 @@ const GCPArchitectureDashboardPage: React.FC = () => {
                 )}
                 
                 <button 
-                  onClick={refresh} 
+                  onClick={handleRefresh} 
                   className={`px-4 py-2 rounded font-medium transition-colors ${
                     isApiDisabled 
                       ? 'bg-yellow-600 hover:bg-yellow-500 text-white' 
@@ -127,7 +155,7 @@ const GCPArchitectureDashboardPage: React.FC = () => {
             </div>
             <div className="flex justify-center space-x-4">
               <button 
-                onClick={refresh}
+                onClick={handleRefresh}
                 className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md font-medium transition-colors"
               >
                 Retry Discovery
@@ -147,9 +175,10 @@ const GCPArchitectureDashboardPage: React.FC = () => {
     return (
       <GCPArchitectureDashboard
         architecture={architecture}
-        onRefresh={refresh}
+        onRefresh={handleRefresh}
         selectedResource={selectedResource}
         onResourceSelect={handleResourceSelect}
+        lastFetch={lastFetch}
       />
     );
   }

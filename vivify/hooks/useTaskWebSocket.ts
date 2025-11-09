@@ -43,26 +43,29 @@ export const useTaskWebSocket = (projectId: string) => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const retryAttempt = useRef(0);
-  const mockWebSocket = useRef<any>(null);
+  const mockTimeoutRef = useRef<any>(null);
+  const mockIntervalRef = useRef<any>(null);
 
-  const applyPatches = (patches: JsonPatchOperation[]) => {
+  const applyPatches = useCallback((patches: JsonPatchOperation[]) => {
     try {
-      const nextState = produce(state, draft => {
-        applyPatch(draft, patches);
+      setState(currentState => {
+        const nextState = produce(currentState, draft => {
+          applyPatch(draft, patches);
+        });
+        return nextState;
       });
-      setState(nextState);
     } catch (e) {
       console.error('Failed to apply patch:', e);
       setError(e instanceof Error ? e : new Error('Failed to apply patch'));
     }
-  };
+  }, []);
 
   const connect = useCallback(() => {
     // This simulates a WebSocket connection.
     console.log(`Connecting to ws://localhost:8080/api/tasks/stream/ws?project_id=${projectId}`);
     setIsConnected(false);
 
-    mockWebSocket.current = setTimeout(() => {
+    mockTimeoutRef.current = setTimeout(() => {
       // onopen
       console.log('WebSocket connection established.');
       setIsConnected(true);
@@ -74,33 +77,21 @@ export const useTaskWebSocket = (projectId: string) => {
       const initialPatch: JsonPatchOperation[] = [{ op: 'replace', path: '/tasks', value: MOCK_INITIAL_TASKS }];
       applyPatches(initialPatch);
 
-      // Simulate subsequent updates
-      let taskCounter = 7;
-      mockWebSocket.current = setInterval(() => {
-        const newTask: Task = {
-            id: `task-${taskCounter}`,
-            title: `New Dynamic Task ${taskCounter}`,
-            description: 'This task was added in real-time.',
-            status: TaskStatus.Todo,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-        };
-        const addPatch: JsonPatchOperation[] = [{ op: 'add', path: `/tasks/task-${taskCounter}`, value: newTask }];
-        applyPatches(addPatch);
-        taskCounter++;
-      }, 8000);
+      // Note: Removed the interval that was adding tasks every 8 seconds
+      // Tasks are now static and only updated via updateTaskStatus
 
     }, 1000); // Simulate connection delay
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+  }, [projectId, applyPatches]);
 
   useEffect(() => {
     connect();
     return () => {
-      // Cleanup: clear timeouts and intervals
-      if (mockWebSocket.current) {
-        clearTimeout(mockWebSocket.current);
-        clearInterval(mockWebSocket.current);
+      // Cleanup: clear both timeout and interval
+      if (mockTimeoutRef.current) {
+        clearTimeout(mockTimeoutRef.current);
+      }
+      if (mockIntervalRef.current) {
+        clearInterval(mockIntervalRef.current);
       }
     };
   }, [connect]);
@@ -112,7 +103,7 @@ export const useTaskWebSocket = (projectId: string) => {
       { op: 'replace', path: `/tasks/${taskId}/updated_at`, value: new Date().toISOString() }
     ];
     applyPatches(patch);
-  }, []);
+  }, [applyPatches]);
 
   return { tasks: state.tasks, isLoading, isConnected, error, updateTaskStatus };
 };
