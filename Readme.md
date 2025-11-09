@@ -10,6 +10,13 @@ Vibe DevOps is an intelligent platform that helps DevOps teams manage their clou
 2. **Kanban Task Board** - Real-time task management with drag-and-drop functionality and WebSocket synchronization
 3. **GCP Architecture Dashboard** - Visual representation of your Google Cloud Platform resources with live metrics, costs, and health monitoring
 
+
+## Page 1: Live Canvas of all services on GCP
+![](images/canvas.png)
+
+## Page 2: Chat with your cloud
+![](images/agent.png)
+
 ## Key Features
 
 - 🤖 **Conversational AI Agent** - Natural language interface for task and infrastructure management
