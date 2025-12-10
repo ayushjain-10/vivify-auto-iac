@@ -1,0 +1,163 @@
+
+######################################################################
+#                    SCALABILITY EXPERIMENTS                       #
+#                    Vivify Auto-IaC Platform                      #
+######################################################################
+
+============================================================
+EXPERIMENT 1: Task Graph Throughput & Parallelism
+============================================================
+
+[Phase 1] Throughput vs Worker Concurrency
+  Depth=2, Fan-out=2, Workers=4: 210.34 tasks/s, Speedup=0.63x
+  Depth=2, Fan-out=2, Workers=8: 245.62 tasks/s, Speedup=1.22x
+  Depth=2, Fan-out=2, Workers=16: 484.36 tasks/s, Speedup=1.42x
+  Depth=2, Fan-out=2, Workers=32: 661.19 tasks/s, Speedup=1.45x
+  Depth=2, Fan-out=4, Workers=4: 470.54 tasks/s, Speedup=1.06x
+  Depth=2, Fan-out=4, Workers=8: 629.67 tasks/s, Speedup=1.81x
+  Depth=2, Fan-out=4, Workers=16: 655.04 tasks/s, Speedup=1.55x
+  Depth=2, Fan-out=4, Workers=32: 586.27 tasks/s, Speedup=1.96x
+  Depth=2, Fan-out=8, Workers=4: 677.06 tasks/s, Speedup=2.31x
+  Depth=2, Fan-out=8, Workers=8: 821.77 tasks/s, Speedup=2.71x
+  Depth=2, Fan-out=8, Workers=16: 853.29 tasks/s, Speedup=2.79x
+  Depth=2, Fan-out=8, Workers=32: 967.3 tasks/s, Speedup=3.08x
+  Depth=4, Fan-out=2, Workers=4: 769.28 tasks/s, Speedup=2.23x
+  Depth=4, Fan-out=2, Workers=8: 791.21 tasks/s, Speedup=2.45x
+  Depth=4, Fan-out=2, Workers=16: 778.85 tasks/s, Speedup=2.72x
+  Depth=4, Fan-out=2, Workers=32: 794.62 tasks/s, Speedup=2.43x
+  Depth=4, Fan-out=4, Workers=4: 983.43 tasks/s, Speedup=3.44x
+  Depth=4, Fan-out=4, Workers=8: 1768.12 tasks/s, Speedup=5.95x
+  Depth=4, Fan-out=4, Workers=16: 2264.61 tasks/s, Speedup=7.34x
+  Depth=4, Fan-out=4, Workers=32: 3541.7 tasks/s, Speedup=11.43x
+  Depth=4, Fan-out=8, Workers=4: 1106.03 tasks/s, Speedup=3.83x
+  Depth=4, Fan-out=8, Workers=8: 2147.16 tasks/s, Speedup=7.22x
+  Depth=4, Fan-out=8, Workers=16: 3592.0 tasks/s, Speedup=12.47x
+  Depth=4, Fan-out=8, Workers=32: 5698.3 tasks/s, Speedup=18.48x
+  Depth=6, Fan-out=2, Workers=4: 974.89 tasks/s, Speedup=2.94x
+  Depth=6, Fan-out=2, Workers=8: 1192.89 tasks/s, Speedup=4.31x
+  Depth=6, Fan-out=2, Workers=16: 1432.59 tasks/s, Speedup=4.94x
+  Depth=6, Fan-out=2, Workers=32: 1882.46 tasks/s, Speedup=6.08x
+  Depth=6, Fan-out=4, Workers=4: 1125.81 tasks/s, Speedup=3.74x
+  Depth=6, Fan-out=4, Workers=8: 2096.62 tasks/s, Speedup=7.17x
+  Depth=6, Fan-out=4, Workers=16: 4039.95 tasks/s, Speedup=13.39x
+  Depth=6, Fan-out=4, Workers=32: 6466.93 tasks/s, Speedup=21.03x
+  Depth=6, Fan-out=8, Workers=4: 1129.45 tasks/s, Speedup=3.82x
+  Depth=6, Fan-out=8, Workers=8: 2244.24 tasks/s, Speedup=7.46x
+  Depth=6, Fan-out=8, Workers=16: 4324.69 tasks/s, Speedup=14.24x
+  Depth=6, Fan-out=8, Workers=32: 7522.57 tasks/s, Speedup=24.54x
+
+[Phase 2] Failure Injection & Subtree Retry
+  Failure Rate=10.0%: Retry Radius=5, Failed=3
+  Failure Rate=20.0%: Retry Radius=5, Failed=3
+  Failure Rate=30.0%: Retry Radius=5, Failed=5
+
+============================================================
+EXPERIMENT 2: Deployability Feedback Loop (passItr@n)
+============================================================
+
+[Phase 1] Running deployment pipelines...
+
+[Phase 2] Calculating passItr@n metrics...
+
+  passItr@1:
+    IAM_Basic: 66.7%
+    S3_Standard: 50.0%
+    VPC_Network: 50.0%
+    Lambda_API: 43.3%
+    SecurityGroup: 33.3%
+
+  passItr@5:
+    IAM_Basic: 100.0%
+    S3_Standard: 100.0%
+    VPC_Network: 100.0%
+    Lambda_API: 100.0%
+    SecurityGroup: 100.0%
+
+  passItr@10:
+    IAM_Basic: 100.0%
+    S3_Standard: 100.0%
+    VPC_Network: 100.0%
+    Lambda_API: 100.0%
+    SecurityGroup: 100.0%
+
+[Phase 3] Error Distribution:
+    InvalidPropertyValue: 28.8%
+    MissingParameter: 22.6%
+    DependencyViolation: 16.8%
+    ResourceNotFound: 14.4%
+    QuotaExceeded: 12.0%
+    AccessDenied: 5.5%
+
+[Phase 4] Time Metrics:
+    p95 time/iteration: 2.67ms
+
+============================================================
+EXPERIMENT 3: IaC Apply Concurrency, Drift, and Rollback
+============================================================
+
+[Config] Testing with 10 stacks across 3 regions...
+    Convergence: 100.0% in 0.01s
+    Rollback Success: 100%
+    Throttling: 0.0%
+
+[Config] Testing with 25 stacks across 3 regions...
+    Convergence: 100.0% in 0.01s
+    Rollback Success: 100.0%
+    Throttling: 0.0%
+
+[Config] Testing with 50 stacks across 3 regions...
+    Convergence: 100.0% in 0.017s
+    Rollback Success: 100.0%
+    Throttling: 6.0%
+
+============================================================
+EXPERIMENT 4: Canvas & Event Fan-out Under Load
+============================================================
+
+[Config] 100 sessions, 100 nodes each...
+    p95 Latency: 1.38ms
+    Drop Rate: 0.0%
+    Simulated FPS: 53.3
+
+[Config] 100 sessions, 500 nodes each...
+    p95 Latency: 2.49ms
+    Drop Rate: 0.0%
+    Simulated FPS: 46.7
+
+[Config] 100 sessions, 1000 nodes each...
+    p95 Latency: 4.6ms
+    Drop Rate: 0.0%
+    Simulated FPS: 38.3
+
+[Config] 500 sessions, 100 nodes each...
+    p95 Latency: 1.26ms
+    Drop Rate: 0.0%
+    Simulated FPS: 33.3
+
+[Config] 500 sessions, 500 nodes each...
+    p95 Latency: 2.71ms
+    Drop Rate: 0.0%
+    Simulated FPS: 26.7
+
+[Config] 500 sessions, 1000 nodes each...
+    p95 Latency: 4.5ms
+    Drop Rate: 0.0%
+    Simulated FPS: 20
+
+[Config] 1000 sessions, 100 nodes each...
+    p95 Latency: 1.18ms
+    Drop Rate: 0.0%
+    Simulated FPS: 20
+
+[Config] 1000 sessions, 500 nodes each...
+    p95 Latency: 2.54ms
+    Drop Rate: 0.0%
+    Simulated FPS: 20
+
+[Config] 1000 sessions, 1000 nodes each...
+    p95 Latency: 4.28ms
+    Drop Rate: 0.0%
+    Simulated FPS: 20
+
+
+Results saved to experiment_results.json
